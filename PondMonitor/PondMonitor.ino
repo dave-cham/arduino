@@ -10,15 +10,6 @@
 #include <ESP8266mDNS.h>
 
 //USER CONFIGURED SECTION START//
-const char* ssid = "Barney & Family";
-const char* password = "Rice Krispies";
-//const char* mqtt_server = "192.168.1.189";
-const char* mqtt_server = "homeassistant";
-const int mqtt_port = 1883;
-const char *mqtt_user = "mqtt";
-const char *mqtt_pass = "Rhu8ar8";
-const char *mqtt_client_name = "pond-level-monitor"; 
-const char *mqtt_topic = "pond/level/status";
 //USER CONFIGURED SECTION END//
 
 enum WaterLevel
