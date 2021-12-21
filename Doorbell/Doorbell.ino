@@ -26,22 +26,21 @@ enum DoorbellState {
 int doorbellSwitchInput = 2;
 int doorbellRingOutput = 0;
 unsigned long whenDingStarted = 0;
-unsigned long minDingTime = 50;
+unsigned long minDingTime = 1000;
 DoorbellState state = Dong;
 
 void loop() {
-  bool isButtonPressed = digitalRead(doorbellSwitchInput) == LOW;
+  bool isButtonPressed = readButtonState();
+  setBellStatus(isButtonPressed);
+
   if(isButtonPressed)
   {
-    // Check again that the button is pressed - avoid interference causing false Dings
-    delay(5);
-    if(digitalRead(doorbellSwitchInput) != LOW)
+    if(whenDingStarted == 0)
     {
-      return;
+      whenDingStarted = millis();
     }
   }
-
-  if(!isButtonPressed)
+  else
   {
     if(millis() - whenDingStarted < minDingTime) {
       isButtonPressed = true;
@@ -54,16 +53,35 @@ void loop() {
   updateStatus(isButtonPressed?Ding:Dong);
 }
 
+bool readButtonState()
+{
+  bool isPressed = digitalRead(doorbellSwitchInput) == LOW;
+  if(isPressed)
+  {
+    // Check again that the button is pressed - avoid interference causing false Dings
+    delay(5);
+    if(digitalRead(doorbellSwitchInput) != LOW)
+    {
+      Serial.println("Interference");
+      return false;
+    }
+  }
+  return isPressed;
+}
+
+void setBellStatus(bool isPressed)
+{
+  digitalWrite(doorbellRingOutput, isPressed?LOW:HIGH);
+}
+
 void updateStatus(DoorbellState newState)
 {
   if(state != newState)
   {
-    digitalWrite(doorbellRingOutput, state==Ding?LOW:HIGH);
-    
     char* payload = getMqttMessagePayload(newState);
     Serial.print("Sending MQTT message: ");
     Serial.println(payload);
-    if(broadcast(payload))
+    //if(broadcast(payload))
     {
       state = newState;
     }
