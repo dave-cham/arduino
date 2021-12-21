@@ -12,7 +12,6 @@
 //const char *mqtt_user = "";
 //const char *mqtt_pass = "";
 //const char *mqtt_client_name = "pond-level-monitor"; 
-//const char *mqtt_topic = "doorbell/status";
 //USER CONFIGURED SECTION END//
 
 WiFiClient espClient;
@@ -81,7 +80,7 @@ void updateStatus(DoorbellState newState)
     char* payload = getMqttMessagePayload(newState);
     Serial.print("Sending MQTT message: ");
     Serial.println(payload);
-    //if(broadcast(payload))
+    if(broadcast(payload))
     {
       state = newState;
     }
