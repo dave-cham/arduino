@@ -1,0 +1,5 @@
+  1 - netgear (dd-wrt)
+ 10 - camera
+ 11 - printer
+ 50 - pi3
+

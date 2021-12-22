@@ -25,31 +25,47 @@ enum DoorbellState {
 int doorbellSwitchInput = 2;
 int doorbellRingOutput = 0;
 unsigned long whenDingStarted = 0;
-unsigned long minDingTime = 1000;
+unsigned long whenMqttStarted = 0;
+unsigned long minDingTime = 200;
+unsigned long minMqttTime = 1000;
 DoorbellState state = Dong;
 
 void loop() {
   bool isButtonPressed = readButtonState();
-  setBellStatus(isButtonPressed);
 
+  DoorbellState mqttStatus = Dong;
+  DoorbellState dingStatus = Dong;
   if(isButtonPressed)
   {
     if(whenDingStarted == 0)
     {
       whenDingStarted = millis();
     }
+    if(whenMqttStarted == 0)
+    {
+      whenMqttStarted = millis();
+    }
+    mqttStatus = Ding;
+    dingStatus = Ding;
   }
   else
   {
     if(millis() - whenDingStarted < minDingTime) {
-      isButtonPressed = true;
+      dingStatus = Ding;
     }
     else {
       whenDingStarted = 0;
     }
+    if(millis() - whenMqttStarted < minMqttTime) {
+      mqttStatus = Ding;
+    }
+    else {
+      whenMqttStarted = 0;
+    }
   }
 
-  updateStatus(isButtonPressed?Ding:Dong);
+  setBellStatus(dingStatus);
+  updateMqttStatus(mqttStatus);
 }
 
 bool readButtonState()
@@ -57,6 +73,8 @@ bool readButtonState()
   bool isPressed = digitalRead(doorbellSwitchInput) == LOW;
   if(isPressed)
   {
+    Serial.println("pressed");
+    
     // Check again that the button is pressed - avoid interference causing false Dings
     delay(5);
     if(digitalRead(doorbellSwitchInput) != LOW)
@@ -64,16 +82,27 @@ bool readButtonState()
       Serial.println("Interference");
       return false;
     }
+    else
+    {
+      Serial.println("deffo pressed");
+    }
   }
   return isPressed;
 }
 
-void setBellStatus(bool isPressed)
+DoorbellState lastStatus = Dong;
+void setBellStatus(DoorbellState status)
 {
-  digitalWrite(doorbellRingOutput, isPressed?LOW:HIGH);
+  if(status != lastStatus)
+  {
+    Serial.println(status==Ding?"Ding":"Dong");
+    lastStatus = status;
+  }
+  
+  digitalWrite(doorbellRingOutput, status==Ding ? HIGH : LOW);
 }
 
-void updateStatus(DoorbellState newState)
+void updateMqttStatus(DoorbellState newState)
 {
   if(state != newState)
   {
