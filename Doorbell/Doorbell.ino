@@ -3,6 +3,8 @@
 #include <PubSubClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 
 //USER CONFIGURED SECTION START//
 //const char* ssid = "";
@@ -29,8 +31,11 @@ unsigned long whenMqttStarted = 0;
 unsigned long minDingTime = 200;
 unsigned long minMqttTime = 1000;
 DoorbellState state = Dong;
+bool statusLedOn = false;
+unsigned long statusLedLastChange = 0;
 
 void loop() {
+  ArduinoOTA.handle();
   bool isButtonPressed = readButtonState();
 
   DoorbellState mqttStatus = Dong;
@@ -66,6 +71,7 @@ void loop() {
 
   setBellStatus(dingStatus);
   updateMqttStatus(mqttStatus);
+  updateStatusLed();
 }
 
 bool readButtonState()
@@ -73,18 +79,18 @@ bool readButtonState()
   bool isPressed = digitalRead(doorbellSwitchInput) == LOW;
   if(isPressed)
   {
-    Serial.println("pressed");
+    //Serial.println("pressed");
     
     // Check again that the button is pressed - avoid interference causing false Dings
     delay(5);
     if(digitalRead(doorbellSwitchInput) != LOW)
     {
-      Serial.println("Interference");
+      //Serial.println("Interference");
       return false;
     }
     else
     {
-      Serial.println("deffo pressed");
+      //Serial.println("deffo pressed");
     }
   }
   return isPressed;
@@ -95,7 +101,7 @@ void setBellStatus(DoorbellState status)
 {
   if(status != lastStatus)
   {
-    Serial.println(status==Ding?"Ding":"Dong");
+    //Serial.println(status==Ding?"Ding":"Dong");
     lastStatus = status;
   }
   
@@ -107,8 +113,8 @@ void updateMqttStatus(DoorbellState newState)
   if(state != newState)
   {
     char* payload = getMqttMessagePayload(newState);
-    Serial.print("Sending MQTT message: ");
-    Serial.println(payload);
+   // Serial.print("Sending MQTT message: ");
+   // Serial.println(payload);
     if(broadcast(payload))
     {
       state = newState;
@@ -124,4 +130,15 @@ char* getMqttMessagePayload(DoorbellState state)
     case Ding: return "Ding";
     default: return "Error";
   }
+}
+
+void updateStatusLed()
+{
+  if(millis() - statusLedLastChange > 500)
+  {
+    statusLedOn = !statusLedOn;
+    statusLedLastChange = millis();
+  }
+
+  digitalWrite(LED_BUILTIN, statusLedOn ? LOW : HIGH);
 }
